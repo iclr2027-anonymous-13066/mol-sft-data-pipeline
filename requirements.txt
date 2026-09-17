@@ -1,0 +1,15 @@
+rdkit>=2022.09.1
+numpy>=1.24
+pandas>=1.5
+pyarrow>=12.0
+scipy>=1.10
+orjson>=3.9
+pydantic>=2.0
+requests>=2.31
+urllib3>=2.0
+aiohttp>=3.9
+openai>=1.30
+tqdm>=4.65
+# tool servers (molkit.tools.tool_server)
+fastapi>=0.110
+uvicorn>=0.29

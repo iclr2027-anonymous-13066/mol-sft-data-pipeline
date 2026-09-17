@@ -1,0 +1,412 @@
+<title>generation_2m_scaffold — SFT data viewer</title>
+<style>
+:root{
+  --paper:#eceeed; --card:#fbfcfb; --sunk:#f2f4f3; --line:#d3d8d7; --line-soft:#e2e6e5;
+  --ink:#12181a; --ink2:#4d5a5c; --ink3:#7a8688;
+  --accent:#12706a; --accent-soft:#dfeceb;
+  --r-user:#8a5320; --r-asst:#12706a; --r-tool:#3d5a97; --r-mem:#6b4a80; --r-sys:#6e7a7c;
+  --ok:#2b6b4f; --warn:#9a6412;
+  --mono:ui-monospace,"SFMono-Regular","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0d1113; --card:#151b1d; --sunk:#111719; --line:#283234; --line-soft:#1f2729;
+  --ink:#e7edec; --ink2:#9aa9a8; --ink3:#6f7f7e;
+  --accent:#4bbfb2; --accent-soft:#132b2a;
+  --r-user:#d09a5c; --r-asst:#4bbfb2; --r-tool:#84a6e0; --r-mem:#b58ccb; --r-sys:#8b9a9b;
+  --ok:#6cc39a; --warn:#d3a45c;
+}}
+:root[data-theme="dark"]{
+  --paper:#0d1113; --card:#151b1d; --sunk:#111719; --line:#283234; --line-soft:#1f2729;
+  --ink:#e7edec; --ink2:#9aa9a8; --ink3:#6f7f7e;
+  --accent:#4bbfb2; --accent-soft:#132b2a;
+  --r-user:#d09a5c; --r-asst:#4bbfb2; --r-tool:#84a6e0; --r-mem:#b58ccb; --r-sys:#8b9a9b;
+  --ok:#6cc39a; --warn:#d3a45c;
+}
+:root[data-theme="light"]{
+  --paper:#eceeed; --card:#fbfcfb; --sunk:#f2f4f3; --line:#d3d8d7; --line-soft:#e2e6e5;
+  --ink:#12181a; --ink2:#4d5a5c; --ink3:#7a8688;
+  --accent:#12706a; --accent-soft:#dfeceb;
+  --r-user:#8a5320; --r-asst:#12706a; --r-tool:#3d5a97; --r-mem:#6b4a80; --r-sys:#6e7a7c;
+  --ok:#2b6b4f; --warn:#9a6412;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px;display:flex;flex-direction:column;gap:28px}
+a{color:var(--accent)}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+h1{font-size:clamp(24px,3.4vw,34px);line-height:1.15;margin:6px 0 0;letter-spacing:-.02em;font-weight:640;text-wrap:balance}
+h2{font-size:15px;margin:0;letter-spacing:-.005em;font-weight:640}
+.sub{color:var(--ink2);max-width:64ch;margin:8px 0 0}
+header .path{font-family:var(--mono);font-size:13px;color:var(--ink2);word-break:break-all;margin-top:10px}
+.pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+.pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink2);background:var(--card)}
+.pill.live{border-color:color-mix(in oklab,var(--warn) 45%,var(--line));color:var(--warn)}
+.pill.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-right:7px;vertical-align:1px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tile{background:var(--card);padding:16px 16px 14px}
+.tile .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.tile .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:26px;letter-spacing:-.02em;margin-top:6px;line-height:1.1}
+.tile .n{font-size:12.5px;color:var(--ink2);margin-top:4px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.panel>.head{padding:14px 18px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.panel>.head .note{font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+.cols{display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
+@media(max-width:860px){.cols{grid-template-columns:1fr}}
+table.shape{width:100%;border-collapse:collapse;font-size:13.5px}
+table.shape th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);text-align:left;font-weight:500;padding:10px 18px;border-bottom:1px solid var(--line-soft)}
+table.shape td{padding:11px 18px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+table.shape tr:last-child td{border-bottom:0}
+table.shape td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.flow{font-family:var(--mono);font-size:11.5px;color:var(--ink2)}
+.bars{padding:6px 18px 16px;display:flex;flex-direction:column;gap:2px}
+.bar{display:grid;grid-template-columns:64px 1fr 74px;align-items:center;gap:10px;padding:3px 0;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.bar .lab{color:var(--ink2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:12px;background:var(--sunk);border-radius:0 4px 4px 0}
+.bar .fill{height:12px;background:var(--accent);border-radius:0 4px 4px 0;min-width:2px}
+.bar .val{color:var(--ink2);text-align:right}
+.browser{display:grid;grid-template-columns:288px 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media(max-width:860px){.browser{grid-template-columns:1fr}}
+.rail{background:var(--card);max-height:76vh;overflow-y:auto}
+.rail .grp{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:14px 16px 7px;position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line-soft)}
+.item{width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line-soft);padding:10px 16px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:3px}
+.item:hover{background:var(--sunk)}
+.item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.item[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.item .id{font-family:var(--mono);font-size:11.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .meta{font-family:var(--mono);font-size:10.5px;color:var(--ink3);display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--ink2)}
+.tag.answer{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 40%,var(--line))}
+.view{background:var(--card);min-height:400px;max-height:76vh;overflow-y:auto;padding:0 0 24px}
+.viewhead{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line-soft);padding:14px 20px;display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.viewhead .t{font-family:var(--mono);font-size:12.5px;color:var(--ink2);word-break:break-all}
+.viewhead .smiles{font-family:var(--mono);font-size:12.5px;color:var(--ink);word-break:break-all;margin-top:3px}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.05em;background:var(--sunk);border:1px solid var(--line);color:var(--ink2);border-radius:6px;padding:4px 9px;cursor:pointer}
+.btn:hover{color:var(--ink);border-color:var(--ink3)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.msgs{display:flex;flex-direction:column}
+.msg{padding:14px 20px;border-bottom:1px solid var(--line-soft)}
+.msg .role{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;padding:2px 7px;border-radius:4px;color:#fff;background:var(--r-sys)}
+.chip.user{background:var(--r-user)}.chip.assistant{background:var(--r-asst)}.chip.tool{background:var(--r-tool)}.chip.memory{background:var(--r-mem)}
+:root[data-theme="dark"] .chip,:root[data-theme="dark"] .chip.user{color:#0d1113}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip{color:#0d1113}}
+.msg .idx{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.memory .txt,.msg.tool .txt{font-family:var(--mono);font-size:12.5px;line-height:1.5;color:var(--ink2)}
+.msg.tool .txt{background:var(--sunk);border:1px solid var(--line-soft);border-radius:7px;padding:10px 12px;overflow-x:auto}
+.msg.memory .txt{border-left:2px solid color-mix(in oklab,var(--r-mem) 55%,var(--line));padding-left:12px}
+.ans{background:color-mix(in oklab,var(--ok) 16%,transparent);border-radius:4px;padding:1px 4px;font-family:var(--mono);font-size:13px}
+.call{margin-top:9px;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.call .cn{font-family:var(--mono);font-size:11.5px;padding:6px 11px;background:var(--sunk);border-bottom:1px solid var(--line-soft);color:var(--accent);letter-spacing:.02em}
+.call pre{margin:0;padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2)}
+.clip{max-height:220px;overflow:hidden;position:relative}
+.clip::after{content:"";position:absolute;inset:auto 0 0 0;height:52px;background:linear-gradient(transparent,var(--card))}
+.msg.tool .clip::after{background:linear-gradient(transparent,var(--sunk))}
+.more{margin-top:7px}
+.seed{padding:4px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.seed .lead{font-size:13.5px;color:var(--ink2);max-width:70ch}
+.seed .row{display:grid;grid-template-columns:76px 1fr;gap:10px 12px;align-items:baseline;font-family:var(--mono);font-size:12px;padding:9px 0;border-top:1px solid var(--line-soft)}
+.seed .row .k{color:var(--ink3);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;text-align:right}
+.seed .row .v{overflow-wrap:anywhere}
+.seed .row .v.now{color:var(--accent)}
+.seed .row .v.was{color:var(--ink3);text-decoration:line-through}
+.split{display:flex;gap:0;height:14px;border-radius:4px;overflow:hidden;background:var(--sunk);margin-top:4px}
+.split i{display:block}
+.split i.a{background:var(--accent)}
+.split i.b{background:color-mix(in oklab,var(--accent) 26%,var(--sunk))}
+.copy{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+.copy .cr{display:grid;grid-template-columns:74px 1fr 1fr;gap:12px;align-items:center}
+.copy .cn{font-family:var(--mono);font-size:11px;color:var(--ink2);text-align:right}
+.copy .cbar{display:flex;flex-direction:column;gap:3px}
+.copy .cbar .t{height:10px;background:var(--sunk);border-radius:0 3px 3px 0}
+.copy .cbar .t i{display:block;height:10px;border-radius:0 3px 3px 0}
+.copy .cbar .t i.now{background:var(--accent)}
+.copy .cbar .t i.was{background:color-mix(in oklab,var(--accent) 26%,var(--sunk))}
+.copy .cbar span{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.splitlab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink2);margin-top:6px}
+.recipes{padding:4px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.recipe .cap{font-size:13px;color:var(--ink2);margin-bottom:5px}
+.recipe pre{margin:0;background:var(--sunk);border:1px solid var(--line-soft);border-radius:7px;padding:10px 12px;font-family:var(--mono);font-size:12px;overflow-x:auto;color:var(--ink)}
+footer{color:var(--ink3);font-size:12.5px;font-family:var(--mono);border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">SFT stage 4 · sftdata</div>
+  <h1>generation_2m_scaffold data viewer</h1>
+  <p class="sub">Training records cut segment by segment out of scaffold-generation trajectories. The composition statistics are below, and individual records can be opened as conversations.</p>
+  <div class="path" id="path"></div>
+  <div class="pillrow" id="pills"></div>
+</header>
+
+<section class="tiles" id="tiles"></section>
+
+<section class="cols">
+  <div class="panel">
+    <div class="head"><h2>Three record shapes</h2><span class="note">example_type &times; tool calls</span></div>
+    <div style="overflow-x:auto"><table class="shape" id="shape"></table></div>
+  </div>
+  <div class="panel">
+    <div class="head"><h2>Trajectory length</h2><span class="note">trajectories by segment count</span></div>
+    <div class="bars" id="segbars"></div>
+  </div>
+</section>
+
+<section class="cols">
+  <div class="panel">
+    <div class="head"><h2>Tool calls</h2><span class="note"><span id="callsum"></span> in total</span></div>
+    <div class="bars" id="toolbars"></div>
+  </div>
+  <div class="panel">
+    <div class="head"><h2>Message roles</h2><span class="note">messages per role</span></div>
+    <div class="bars" id="rolebars"></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="head"><h2>Seed notation &mdash; transcribed from SMARTS</h2><span class="note" id="seednote"></span></div>
+  <div class="seed" id="seed"></div>
+</section>
+
+<section class="panel" style="padding:0">
+  <div class="head"><h2>Browse records</h2><span class="note">one full trajectory + 20 random samples</span></div>
+  <div class="browser" style="border:0;border-radius:0">
+    <nav class="rail" id="rail" aria-label="record list"></nav>
+    <div class="view" id="view"></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="head"><h2>Checking it from the shell</h2><span class="note">jq / python</span></div>
+  <div class="recipes" id="recipes"></div>
+</section>
+
+<footer id="foot"></footer>
+</div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const D = JSON.parse(document.getElementById('payload').textContent);
+const nf = n => n.toLocaleString('en-US');
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
+
+/* ---------- header ---------- */
+document.getElementById('path').textContent = D.dir;
+const bytes = D.files.reduce((a, f) => a + f.bytes, 0);
+const gb = (bytes / 1e9).toFixed(2);
+const running = D.files.some(f => !f.done);
+const pills = document.getElementById('pills');
+pills.append(el('span', 'pill', 'snapshot ' + D.scanned_at.replace('T', ' ')));
+pills.append(el('span', 'pill', D.files.length + ' chunk files · ' + gb + ' GB'));
+if (running) pills.append(el('span', 'pill live', 'generation in progress &mdash; ' + D.files.filter(f => !f.done).length + ' files still growing'));
+
+/* ---------- tiles ---------- */
+const tiles = [
+  ['records', nf(D.total), 'one training line = one record'],
+  ['trajectories', nf(D.groups), 'by group_id, ' + (D.total / D.groups).toFixed(1) + ' segments on average'],
+  ['final-answer records', nf(D.has_answer), 'the last segment, ending in &lt;ANSWER&gt;'],
+  ['tool calls', nf(Object.values(D.tool_usage).reduce((a, b) => a + b, 0)), D.tools_available.length + ' distinct tools used'],
+  ['record size', nf(D.len_stats.record_chars.p50) + ' <span style="font-size:14px;color:var(--ink3)">chars</span>', 'median, tool schemas included']
+];
+const tw = document.getElementById('tiles');
+tiles.forEach(([k, v, n]) => {
+  const t = el('div', 'tile');
+  t.append(el('div', 'k', k), el('div', 'v', v), el('div', 'n', n));
+  tw.append(t);
+});
+
+/* ---------- record shapes ---------- */
+const shapes = [
+  { name: 'seed segment', type: 'segment_intermediate', msgs: 7, n: D.n_messages['7'] || 0,
+    flow: 'user → assistant(3 parallel calls) → tool×3 → SUMMARY',
+    desc: 'fix the SMARTS, build the core SMILES, then check match/properties/label in one go' },
+  { name: 'edit segment', type: 'segment_intermediate', msgs: 12, n: D.n_messages['12'] || 0,
+    flow: 'memory -> suggest_edits -> edit_fragment -> 3 verification calls -> SUMMARY',
+    desc: 'pick one mmpdb candidate, apply it, measure again, and summarise in SUMMARY' },
+  { name: 'final answer', type: 'normal', msgs: 4, n: D.n_messages['4'] || 0,
+    flow: 'memory → assistant(&lt;ANSWER&gt;)', desc: 'the closing record: answer with the final SMILES from the carried memory alone' }
+];
+const st = document.getElementById('shape');
+st.innerHTML = '<thead><tr><th>shape</th><th>flow</th><th style="text-align:right">messages</th><th style="text-align:right">records</th></tr></thead>';
+const stb = el('tbody');
+shapes.forEach(s => {
+  const tr = el('tr');
+  tr.innerHTML = '<td><div>' + s.name + '</div><div style="font-size:12px;color:var(--ink3)">' + s.desc + '</div></td>' +
+    '<td class="flow">' + s.flow + '</td><td class="num">' + s.msgs + '</td><td class="num">' + nf(s.n) +
+    '<div style="font-size:11px;color:var(--ink3)">' + (100 * s.n / D.total).toFixed(1) + '%</div></td>';
+  stb.append(tr);
+});
+st.append(stb);
+
+/* ---------- bar charts (single hue = magnitude) ---------- */
+function bars(node, rows, fmt) {
+  const max = Math.max(...rows.map(r => r[1]));
+  rows.forEach(([lab, v, title]) => {
+    const b = el('div', 'bar');
+    b.title = title || (lab + ': ' + nf(v));
+    b.innerHTML = '<div class="lab">' + esc(lab) + '</div><div class="track"><div class="fill" style="width:' +
+      Math.max(0.6, 100 * v / max) + '%"></div></div><div class="val">' + (fmt ? fmt(v) : nf(v)) + '</div>';
+    node.append(b);
+  });
+}
+const segRows = Object.entries(D.segment_total)
+  .map(([k, v]) => [+k, v]).sort((a, b) => a[0] - b[0])
+  .map(([k, v]) => [k + ' seg', Math.round(v / k), nf(Math.round(v / k)) + ' trajectories of ' + k + ' segments (' + nf(v) + ' records)']);
+bars(document.getElementById('segbars'), segRows);
+const toolRows = Object.entries(D.tool_usage).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v]);
+document.getElementById('callsum').textContent = nf(toolRows.reduce((a, r) => a + r[1], 0));
+bars(document.getElementById('toolbars'), toolRows);
+const roleRows = ['system', 'user', 'memory', 'assistant', 'tool'].filter(r => D.msg_roles[r]).map(r => [r, D.msg_roles[r]]);
+bars(document.getElementById('rolebars'), roleRows);
+
+/* ---------- record browser ---------- */
+const entries = [];
+D.trajectory.forEach((r, i) => entries.push({ rec: r, group: 'traj', label: 'segment ' + r.metadata.segment_index }));
+D.samples.forEach(r => entries.push({ rec: r, group: 'sample' }));
+
+const rail = document.getElementById('rail');
+function addGroup(text) { rail.append(el('div', 'grp', text)); }
+function addItem(e, idx) {
+  const m = e.rec.metadata, last = e.rec.messages[e.rec.messages.length - 1];
+  const isAns = (last.content || '').includes('<ANSWER>');
+  const b = el('button', 'item');
+  b.type = 'button';
+  b.dataset.i = idx;
+  b.innerHTML = '<span class="id">' + esc(e.label || m.group_id) + '</span>' +
+    '<span class="meta"><span class="tag' + (isAns ? ' answer' : '') + '">' + (isAns ? 'ANSWER' : m.example_type.replace('segment_', '')) + '</span>' +
+    '<span>seg ' + (m.segment_index + 1) + '/' + m.segment_total + '</span><span>' + e.rec.messages.length + ' msg</span>' +
+    '<span>' + m.num_tool_calls + ' call</span></span>';
+  b.addEventListener('click', () => select(idx));
+  rail.append(b);
+}
+addGroup('full trajectory · ' + D.trajectory[0].metadata.group_id);
+entries.forEach((e, i) => { if (e.group === 'traj') addItem(e, i); });
+addGroup('random samples: ' + D.samples.length);
+entries.forEach((e, i) => { if (e.group === 'sample') addItem(e, i); });
+
+const view = document.getElementById('view');
+function pretty(s) {
+  try { return JSON.stringify(JSON.parse(s), null, 1); } catch (err) { return s; }
+}
+function clipBlock(pre, host) {
+  if (pre.textContent.length < 700) return;
+  pre.classList.add('clip');
+  const b = el('button', 'btn more', 'show all');
+  b.type = 'button';
+  b.addEventListener('click', () => {
+    const open = pre.classList.toggle('clip');
+    b.textContent = open ? 'show all' : 'collapse';
+  });
+  host.append(b);
+}
+function renderMsg(m, i) {
+  const d = el('div', 'msg ' + m.role);
+  const head = el('div', 'role');
+  head.append(el('span', 'chip ' + m.role, m.role), el('span', 'idx', '#' + i));
+  d.append(head);
+  if (m.content) {
+    const body = m.role === 'tool' ? pretty(m.content) : m.content;
+    const t = el('div', 'txt', esc(body)
+      .replace(/&lt;(ANSWER|SUMMARY)&gt;([\s\S]*?)&lt;\/\1&gt;/g, (_, tag, inner) => '<span class="ans">&lt;' + tag + '&gt;' + inner + '&lt;/' + tag + '&gt;</span>'));
+    d.append(t);
+    if (m.role === 'tool' || m.role === 'memory') clipBlock(t, d);
+  }
+  (m.tool_calls || []).forEach(c => {
+    const w = el('div', 'call');
+    w.append(el('div', 'cn', c.function.name + '()'));
+    const pre = el('pre', '', esc(pretty(c.function.arguments)));
+    w.append(pre);
+    d.append(w);
+    clipBlock(pre, d);
+  });
+  return d;
+}
+function select(idx) {
+  rail.querySelectorAll('.item').forEach(b => b.setAttribute('aria-current', String(+b.dataset.i === idx)));
+  const e = entries[idx], m = e.rec.metadata;
+  view.innerHTML = '';
+  const h = el('div', 'viewhead');
+  const left = el('div');
+  left.append(el('div', 't', m.group_id + ' · ' + m.example_type + ' · segment ' + (m.segment_index + 1) + '/' + m.segment_total),
+    el('div', 'smiles', 'metadata.molecule &nbsp;' + esc(m.molecule)));
+  const raw = el('button', 'btn', 'raw JSON');
+  raw.type = 'button';
+  let shown = false;
+  raw.addEventListener('click', () => {
+    shown = !shown;
+    rawPre.style.display = shown ? 'block' : 'none';
+    raw.textContent = shown ? 'hide JSON' : 'raw JSON';
+  });
+  h.append(left, raw);
+  view.append(h);
+  const rawPre = el('pre', '', esc(JSON.stringify(e.rec, null, 1)));
+  rawPre.style.cssText = 'display:none;margin:0;padding:14px 20px;font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);background:var(--sunk);border-bottom:1px solid var(--line-soft)';
+  view.append(rawPre);
+  const box = el('div', 'msgs');
+  e.rec.messages.forEach((mm, i) => box.append(renderMsg(mm, i)));
+  view.append(box);
+  view.scrollTop = 0;
+}
+select(0);
+
+/* ---------- seed form ---------- */
+const sf = D.seed_form;
+if (sf && sf.n) {
+  const host = document.getElementById('seed');
+  const pctT = 100 * sf.transcribed / sf.n;
+  document.getElementById('seednote').textContent = nf(sf.n) + ' seed segments';
+  const lead = el('div', 'lead',
+    'The seed SMILES is not the RDKit canonical form but a <strong>transcription of the SMARTS read left to right</strong>. ' +
+    'Every seed atom belongs to the required substructure, so this step is only a change of notation; the canonical form would also have to re-derive the atom order, which is hard to get right in one shot. ' +
+    'From round 1 on, edit_fragment returns canonical SMILES, so the rest is unchanged.');
+  const split = el('div');
+  split.innerHTML = '<div class="split"><i class="a" style="width:' + pctT.toFixed(1) + '%"></i>' +
+    '<i class="b" style="width:' + (100 - pctT).toFixed(1) + '%"></i></div>' +
+    '<div class="splitlab"><span>transcribed ' + nf(sf.transcribed) + ' (' + pctT.toFixed(1) + '%)</span>' +
+    '<span>transcribed = canonical ' + nf(sf.canonical) + ' (' + (100 - pctT).toFixed(1) + '%)</span></div>';
+  host.append(lead, split);
+  if (sf.copy && sf.copy.length) {
+    const cw = el('div', 'copy');
+    sf.copy.forEach(c => {
+      const ps = 100 * c.seed / c.n, pc = 100 * c.canon / c.n;
+      const row = el('div', 'cr');
+      row.title = c.note;
+      row.innerHTML = '<div class="cn">' + esc(c.label) + '</div>' +
+        '<div class="cbar"><div class="t"><i class="now" style="width:' + ps.toFixed(1) + '%"></i></div>' +
+        '<span>transcribed ' + ps.toFixed(1) + '%</span></div>' +
+        '<div class="cbar"><div class="t"><i class="was" style="width:' + pc.toFixed(1) + '%"></i></div>' +
+        '<span>canonical ' + pc.toFixed(1) + '%</span></div>';
+      cw.append(row);
+    });
+    host.append(el('div', 'lead', 'The share where the notation already written in the SMARTS <strong>carries over unchanged</strong> &mdash; a transcription never has to renumber the rings.'), cw);
+  }
+  sf.examples.forEach(e => {
+    const w = el('div');
+    [['SMARTS', e.smarts, ''], ['seed', e.seed, 'now'], ['previous', e.canonical, 'was']].forEach(([k, v, cls]) => {
+      w.append(el('div', 'row', '<div class="k">' + k + '</div><div class="v ' + cls + '">' + esc(v) + '</div>'));
+    });
+    host.append(w);
+  });
+}
+
+/* ---------- shell recipes ---------- */
+const dir = D.dir;
+const recipes = [
+  ['pretty-print one record', "head -n 1 " + dir + "/toolchains_generation_chunk_000000.jsonl | jq '.messages'"],
+  ['extract just the conversation as text', "sed -n '5p' " + dir + "/toolchains_generation_chunk_000000.jsonl | \\\n  jq -r '.messages[] | \"=== \\(.role) ===\\n\\(.content // \"\")\\n\" + ((.tool_calls // []) | map(.function.name + \" \" + .function.arguments) | join(\"\\n\"))'"],
+  ['collect every segment of one trajectory', "grep -h '\"group_id\": \"" + D.trajectory[0].metadata.group_id + "\"' " + dir + "/*.jsonl | \\\n  jq -s 'sort_by(.metadata.segment_index) | .[] | .metadata'"],
+  ['count the records written so far', "wc -l " + dir + "/*.jsonl"],
+  ['example_type distribution', "cat " + dir + "/*.jsonl | jq -r '.metadata.example_type' | sort | uniq -c"]
+];
+const rc = document.getElementById('recipes');
+recipes.forEach(([cap, cmd]) => {
+  const r = el('div', 'recipe');
+  r.append(el('div', 'cap', cap), el('pre', '', esc(cmd)));
+  rc.append(r);
+});
+document.getElementById('foot').textContent =
+  'snapshot ' + D.scanned_at.replace('T', ' ') + ' · counts over all ' + nf(D.total) + ' records, samples drawn at random per type · files keep growing, so the numbers are as of this moment.';
+</script>
