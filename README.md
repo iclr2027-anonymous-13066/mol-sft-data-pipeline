@@ -66,8 +66,13 @@ so a served model is required for those; `SERVERS` lists the endpoints.
 
 | File | Rows | Contents |
 |---|---:|---|
-| `testset_900.jsonl` | 900 | in-distribution test instances |
-| `ood_300.jsonl` | 300 | out-of-distribution instances; the `ood_flag` field names the axis (`property_ood` / `structure_ood` / `property_structure_ood`, 100 each) |
+| `testset_900.jsonl` | 900 | in-distribution (ID) test instances — the standard construction, without explicit scaffold exclusion |
+| `ood_300.jsonl` | 300 | scaffold-out-of-distribution (Scaffold-OOD) instances — scaffold-disjoint from the training instances, constrained on at least three of logD, logS, BBBP and Mutag; narrow, medium and wide property windows, 100 each |
+
+The ID set combines [MolDesignBench](https://huggingface.co/datasets/LG-AI-Research/MolDesignBench)
+property constraints with scaffold or functional-group requirements, plus 300 instances newly
+constructed from the test molecule pool. The Scaffold-OOD set targets refinement over the ADMET
+properties whose values vary most under molecular edits.
 
 Each record is a generation task and carries its exact user message in `question`, the
 property constraints, the grading SMARTS, and a reference molecule that witnesses the

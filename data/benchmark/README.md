@@ -4,16 +4,27 @@ Held-out evaluation sets, one JSONL record per instance.
 
 | File | Rows | Contents |
 |---|---:|---|
-| `testset_900.jsonl` | 900 | in-distribution test instances |
-| `ood_300.jsonl` | 300 | out-of-distribution instances, three axes of 100 |
+| `testset_900.jsonl` | 900 | in-distribution (ID) test instances |
+| `ood_300.jsonl` | 300 | scaffold-out-of-distribution (Scaffold-OOD) instances |
 
-`ood_300.jsonl` carries an `ood_flag` naming the axis of each record:
+`testset_900.jsonl` (ID) follows the standard construction, with no explicit scaffold
+exclusion: MolDesignBench property constraints paired with scaffold or functional-group
+requirements, plus 300 instances newly built from the test molecule pool.
 
-| `ood_flag` | Rows | Axis |
-|---|---:|---|
-| `property_ood` | 100 | property windows moved off-distribution, structure constraint unchanged |
-| `structure_ood` | 100 | unseen structure constraints, property windows in-distribution |
-| `property_structure_ood` | 100 | both axes moved together |
+`ood_300.jsonl` (Scaffold-OOD) is scaffold-disjoint from the training instances. All 300
+records are scaffold conditions whose property constraints include at least three of logD,
+logS, BBBP and Mutag — the ADMET properties that shift most unpredictably under molecular
+edits. The set has three property-window widths:
+
+| Set | Property | Structure | Rows |
+|---|---|---|---:|
+| Scaffold-OOD | ADMET ≥ 3 (narrow window) | scaffold | 100 |
+| Scaffold-OOD | ADMET ≥ 3 (medium window) | scaffold | 100 |
+| Scaffold-OOD | ADMET ≥ 3 (wide window) | scaffold | 100 |
+
+ADMET ≥ 3 means at least three of the four ADMET properties are constrained. The `ood_flag`
+field records the construction arm each record came from; it maps to the windows as follows:
+
 
 ## The task
 
